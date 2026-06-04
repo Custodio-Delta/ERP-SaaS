@@ -1,0 +1,288 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  emailVerified Boolean        @default(false)
+  image         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  sessions      Session[]
+  accounts      Account[]
+  memberships   Membership[]
+  activityLogs  ActivityLog[]
+  notifications Notification[]
+  sales         Sale[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id           String    @id @default(uuid())
+  userId       String
+  accountId    String
+  providerId   String
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+  expiresAt    DateTime?
+  password     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+model Organization {
+  id           String        @id @default(uuid())
+  name         String
+  slug         String        @unique
+  logo         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  memberships  Membership[]
+  customers    Customer[]
+  products     Product[]
+  sales        Sale[]
+  invoices     Invoice[]
+  transactions Transaction[]
+  subscription Subscription?
+  activityLogs ActivityLog[]
+
+  @@map("organization")
+}
+
+model Membership {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String
+  role           String       // OWNER, ADMIN, MANAGER, MEMBER
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("membership")
+}
+
+model Customer {
+  id             String        @id @default(uuid())
+  organizationId String
+  name           String
+  email          String?
+  phone          String?
+  document       String?       // CPF ou CNPJ
+  status         String        @default("LEAD") // LEAD, ACTIVE, INACTIVE
+  tags           String[]      // Ex: ["vip", "recorrente"]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sales          Sale[]
+
+  @@map("customer")
+}
+
+model Product {
+  id             String             @id @default(uuid())
+  organizationId String
+  name           String
+  sku            String?
+  description    String?
+  price          Float              @default(0.0)
+  costPrice      Float              @default(0.0)
+  category       String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  variations     ProductVariation[]
+
+  @@map("product")
+}
+
+model ProductVariation {
+  id          String       @id @default(uuid())
+  productId   String
+  name        String       // Ex: "Preto / G", "Padrão"
+  sku         String       @unique
+  price       Float        @default(0.0)
+  stock       Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory   Inventory[]
+  saleItems   SaleItem[]
+
+  @@map("product_variation")
+}
+
+model Inventory {
+  id                 String           @id @default(uuid())
+  productVariationId String
+  quantity           Int              // Pode ser positivo ou negativo
+  type               String           // IN, OUT, ADJUSTMENT
+  notes              String?
+  createdAt          DateTime         @default(now())
+  
+  variation          ProductVariation @relation(fields: [productVariationId], references: [id], onDelete: Cascade)
+
+  @@map("inventory")
+}
+
+model Sale {
+  id             String       @id @default(uuid())
+  organizationId String
+  customerId     String?
+  userId         String
+  totalAmount    Float
+  status         String       @default("PENDING") // PENDING, PAID, CANCELLED
+  paymentMethod  String?      // CREDIT_CARD, BOLETO, PIX
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  user           User         @relation(fields: [userId], references: [id])
+  items          SaleItem[]
+  invoice        Invoice?
+
+  @@map("sale")
+}
+
+model SaleItem {
+  id                 String           @id @default(uuid())
+  saleId             String
+  productVariationId String
+  quantity           Int
+  unitPrice          Float
+  
+  sale               Sale             @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  variation          ProductVariation @relation(fields: [productVariationId], references: [id])
+
+  @@map("sale_item")
+}
+
+model Invoice {
+  id             String       @id @default(uuid())
+  organizationId String
+  saleId         String       @unique
+  invoiceNumber  String       @unique
+  amount         Float
+  status         String       @default("DRAFT") // DRAFT, ISSUED, PAID, VOID
+  dueDate        DateTime
+  issuedAt       DateTime     @default(now())
+  pdfUrl         String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sale           Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@map("invoice")
+}
+
+model Transaction {
+  id             String       @id @default(uuid())
+  organizationId String
+  type           String       // INCOME, EXPENSE
+  amount         Float
+  category       String       // Ex: "Vendas", "Marketing", "Infraestrutura"
+  description    String?
+  status         String       @default("COMPLETED") // PENDING, COMPLETED, FAILED
+  date           DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("transaction")
+}
+
+model Subscription {
+  id                   String       @id @default(uuid())
+  organizationId       String       @unique
+  stripeSubscriptionId String?      @unique
+  stripeCustomerId     String?
+  stripePriceId        String?
+  status               String       // active, trialing, past_due, canceled, unpaid
+  planName             String       @default("FREE") // FREE, PRO, ENTERPRISE
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("subscription")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  type      String   @default("INFO") // INFO, WARNING, SUCCESS, ERROR
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification")
+}
+
+model ActivityLog {
+  id             String        @id @default(uuid())
+  organizationId String
+  userId         String
+  action         String        // Ex: "CUSTOMER_CREATED"
+  entityName     String        // Ex: "Customer"
+  entityId       String?
+  details        String?       // Representação em JSON
+  createdAt      DateTime      @default(now())
+  
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activity_log")
+}
