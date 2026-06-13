@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
+import { checkPlanLimit } from "@/lib/plan-limits";
+
 export async function createProductAction(data: {
   name: string;
   description?: string;
@@ -17,6 +19,12 @@ export async function createProductAction(data: {
     return { error: "Acesso não autorizado." };
   }
   const org = session.organization;
+
+  // Verifica os limites do plano
+  const limitCheck = await checkPlanLimit(org.id, "products");
+  if (!limitCheck.allowed) {
+    return { error: `Limite do plano atingido: Você já possui ${limitCheck.current} produtos no plano ${limitCheck.planName}. Por favor, faça um upgrade para adicionar mais.` };
+  }
 
   try {
     const product = await db.$transaction(async (tx) => {

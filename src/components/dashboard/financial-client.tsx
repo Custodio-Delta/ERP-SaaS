@@ -17,7 +17,6 @@ import {
   Layers,
   ArrowUpRight,
   ArrowDownRight,
-  Lightbulb,
   X
 } from "lucide-react";
 
@@ -39,10 +38,6 @@ export function FinancialClient({ initialTransactions }: FinancialClientProps) {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [filterType, setFilterType] = React.useState<"ALL" | "INCOME" | "EXPENSE">("ALL");
   const [searchQuery, setSearchQuery] = React.useState("");
-  
-  // AI Insights State
-  const [aiInsights, setAiInsights] = React.useState<string[]>([]);
-  const [isGeneratingAi, setIsGeneratingAi] = React.useState(false);
 
   // Form State
   const [formType, setFormType] = React.useState("INCOME");
@@ -121,24 +116,6 @@ export function FinancialClient({ initialTransactions }: FinancialClientProps) {
     return matchesType && matchesSearch;
   });
 
-  // Simulação de Inteligência Artificial para Insights
-  const generateAiInsights = () => {
-    setIsGeneratingAi(true);
-    setAiInsights([]);
-
-    setTimeout(() => {
-      const insights = [
-        `💡 Analisamos suas despesas: O setor de **Infraestrutura** e ferramentas SaaS representam ${(
-          (totalExpenses > 0 ? (totalExpenses * 0.35) / totalExpenses : 0.35) * 100
-        ).toFixed(0)}% das saídas. Recomendamos auditar assinaturas inativas.`,
-        "📈 Padrão de faturamento: Suas receitas concentram-se fortemente nas quartas e quintas-feiras. Considere lançar ações de marketing no início da semana.",
-        `🎯 Meta de Saúde Financeira: Seu saldo operacional está positivo. Com base no fluxo de caixa atual, você possui reservas para operar por mais **14 meses** sem novos investimentos.`
-      ];
-      setAiInsights(insights);
-      setIsGeneratingAi(false);
-    }, 1800);
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -207,50 +184,6 @@ export function FinancialClient({ initialTransactions }: FinancialClientProps) {
             <span className="text-xs text-muted-foreground block mt-1">Margem operacional</span>
           </div>
         </div>
-      </div>
-
-      {/* IA Insights Widget */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="bg-gradient-to-r from-primary/10 via-indigo-500/5 to-transparent px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border">
-          <div className="flex items-center gap-2.5">
-            <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-            <div>
-              <h4 className="text-sm font-semibold text-foreground">AI Financial Insights</h4>
-              <p className="text-xs text-muted-foreground">Análise inteligente de fluxo de caixa baseada em padrões reais</p>
-            </div>
-          </div>
-          <button
-            onClick={generateAiInsights}
-            disabled={isGeneratingAi}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary/20 border border-primary/30 px-3.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/30 transition disabled:opacity-50 shrink-0"
-          >
-            {isGeneratingAi ? (
-              <>
-                <svg className="animate-spin h-3 w-3 text-primary" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                <span>Analisando...</span>
-              </>
-            ) : (
-              <>
-                <Lightbulb className="h-3.5 w-3.5" />
-                <span>Gerar Análise Financeira</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {aiInsights.length > 0 && (
-          <div className="p-6 bg-muted/20 space-y-3">
-            {aiInsights.map((insight, idx) => (
-              <div key={idx} className="flex gap-3 text-sm text-foreground/90 p-2.5 rounded-lg bg-card border border-border">
-                <Info className="h-4.5 w-4.5 text-primary shrink-0 mt-0.5" />
-                <p dangerouslySetInnerHTML={{ __html: insight }} />
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Tabela de Transações */}

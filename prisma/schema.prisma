@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -86,6 +87,7 @@ model Organization {
   transactions Transaction[]
   subscription Subscription?
   activityLogs ActivityLog[]
+  planInvoices PlanInvoice[]
 
   @@map("organization")
 }
@@ -249,12 +251,31 @@ model Subscription {
   status               String       // active, trialing, past_due, canceled, unpaid
   planName             String       @default("FREE") // FREE, PRO, ENTERPRISE
   currentPeriodEnd     DateTime?
+  trialEndsAt          DateTime?    // Data de fim do trial gratuito de 30 dias
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
   
   organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("subscription")
+}
+
+model PlanInvoice {
+  id             String       @id @default(uuid())
+  organizationId String
+  amount         Float
+  planName       String       // FREE, PRO, ENTERPRISE
+  status         String       @default("PENDING") // PENDING, PAID
+  dueDate        DateTime
+  paidAt         DateTime?
+  pixKey         String
+  pixPayload     String       // Payload Pix Copia-e-Cola
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("plan_invoice")
 }
 
 model Notification {

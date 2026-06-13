@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
 import { DashboardCharts } from "@/components/dashboard/charts";
+
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import {
   DollarSign,

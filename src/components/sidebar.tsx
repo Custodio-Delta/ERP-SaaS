@@ -66,6 +66,11 @@ export function Sidebar({ session }: SidebarProps) {
     { name: "Faturamento & Planos", href: "/dashboard/billing", icon: CreditCard },
   ];
 
+  // Adiciona o menu Admin EXCLUSIVAMENTE para o Dono do SaaS
+  if (session.user.email === "novacode123@gmail.com") {
+    navigation.push({ name: "Aprovar PIX (Admin)", href: "/dashboard/admin", icon: Building2 });
+  }
+
   const handleSwitchOrg = async (orgId: string) => {
     setIsOrgDropdownOpen(false);
     const res = await switchOrgAction(orgId);
@@ -97,8 +102,16 @@ export function Sidebar({ session }: SidebarProps) {
       {/* Mobile Drawer */}
       <AnimatePresence>
         {isMobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: -280 }}
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileOpen(false)}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+            />
+            <motion.div
+              initial={{ opacity: 0, x: -280 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -280 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
@@ -155,6 +168,7 @@ export function Sidebar({ session }: SidebarProps) {
               </button>
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
 

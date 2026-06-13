@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
+import { checkPlanLimit } from "@/lib/plan-limits";
+
 export async function createCustomerAction(data: {
   name: string;
   email?: string;
@@ -17,6 +19,12 @@ export async function createCustomerAction(data: {
     return { error: "Acesso não autorizado." };
   }
   const org = session.organization;
+
+  // Verifica os limites do plano
+  const limitCheck = await checkPlanLimit(org.id, "customers");
+  if (!limitCheck.allowed) {
+    return { error: `Limite do plano atingido: Você já possui ${limitCheck.current} clientes no plano ${limitCheck.planName}. Por favor, faça um upgrade para adicionar mais.` };
+  }
 
   try {
     const customer = await db.customer.create({

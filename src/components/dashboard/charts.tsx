@@ -22,7 +22,28 @@ interface ChartsProps {
   categoryData: { name: string; value: number }[];
 }
 
+import { useState, useEffect } from "react";
+
 export function DashboardCharts({ revenueData, categoryData }: ChartsProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <div className="col-span-4 rounded-xl border border-border bg-card p-6 shadow-sm h-[400px] animate-pulse flex items-center justify-center text-muted-foreground text-sm">
+          Carregando gráfico de faturamento...
+        </div>
+        <div className="col-span-3 rounded-xl border border-border bg-card p-6 shadow-sm h-[400px] animate-pulse flex items-center justify-center text-muted-foreground text-sm">
+          Carregando gráfico de categorias...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
       {/* Gráfico de Faturamento */}

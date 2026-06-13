@@ -10,9 +10,11 @@ export default async function BillingPage() {
     redirect("/login");
   }
 
-  // Busca assinatura da organização
+  // Busca assinatura e faturas da organização
   let planName = "FREE";
-  let currentPeriodEnd: Date | null = null;
+  let trialEndsAt: Date | null = null;
+  let isTrialExpired = false;
+  let invoices: any[] = [];
 
   try {
     const subscription = await db.subscription.findUnique({
@@ -23,16 +25,32 @@ export default async function BillingPage() {
 
     if (subscription) {
       planName = subscription.planName;
-      currentPeriodEnd = subscription.currentPeriodEnd;
+      trialEndsAt = subscription.trialEndsAt;
+      
+      if (trialEndsAt && new Date() > trialEndsAt) {
+        isTrialExpired = true;
+      }
     }
+
+    invoices = await db.planInvoice.findMany({
+      where: {
+        organizationId: session.organization.id,
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
   } catch (error) {
-    console.error("Erro ao buscar plano ativo no faturamento:", error);
+    console.error("Erro ao buscar dados de faturamento:", error);
   }
 
   return (
     <BillingClient
       currentPlan={planName}
-      periodEnd={currentPeriodEnd}
+      trialEndsAt={trialEndsAt}
+      isTrialExpired={isTrialExpired}
+      invoices={invoices}
     />
   );
 }

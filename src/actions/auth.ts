@@ -150,12 +150,13 @@ export async function registerAction(data: RegisterInput) {
         },
       });
 
-      // 5. Criar assinatura inicial (Plano Gratuito)
+      // 5. Criar assinatura inicial (Plano Iniciante com 30 dias de trial)
       await tx.subscription.create({
         data: {
           organizationId: org.id,
-          status: "active",
+          status: "trialing",
           planName: "FREE",
+          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 dias
         },
       });
 
